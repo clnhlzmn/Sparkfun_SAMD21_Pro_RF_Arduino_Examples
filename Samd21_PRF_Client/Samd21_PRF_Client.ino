@@ -58,38 +58,55 @@ void setup()
    // you can set transmitter powers from 5 to 23 dBm:
    // Transmitter power can range from 14-20dbm.
    rf95.setTxPower(14, false);
+
+  //gps
+  Serial1.begin(9600);
 }
 
+unsigned long message_send_time = millis();
 
 void loop()
 {
-  SerialUSB.println("Sending message");
 
-  //Send a message to the other radio
-  uint8_t toSend[] = "Hi there!";
-  //sprintf(toSend, "Hi, my counter is: %d", packetCounter++);
-  rf95.send(toSend, sizeof(toSend));
-  rf95.waitPacketSent();
-
-  // Now wait for a reply
-  byte buf[RH_RF95_MAX_MESSAGE_LEN];
-  byte len = sizeof(buf);
-
-  if (rf95.waitAvailableTimeout(2000)) {
-    // Should be a reply message for us now
-    if (rf95.recv(buf, &len)) {
-      SerialUSB.print("Got reply: ");
-      SerialUSB.println((char*)buf);
-      //SerialUSB.print(" RSSI: ");
-      //SerialUSB.print(rf95.lastRssi(), DEC);
+  unsigned long time_now = millis();
+  if (time_now - message_send_time >= 500) {
+    message_send_time = time_now;
+  //  SerialUSB.println("Sending message");
+  
+    //Send a message to the other radio
+    uint8_t toSend[] = "Hi there!";
+    //sprintf(toSend, "Hi, my counter is: %d", packetCounter++);
+    rf95.send(toSend, sizeof(toSend));
+    rf95.waitPacketSent();
+  
+    // Now wait for a reply
+    byte buf[RH_RF95_MAX_MESSAGE_LEN];
+    byte len = sizeof(buf);
+  
+    if (rf95.waitAvailableTimeout(2000)) {
+      // Should be a reply message for us now
+      if (rf95.recv(buf, &len)) {
+  //      SerialUSB.print("Got reply: ");
+  //      SerialUSB.println((char*)buf);
+        //SerialUSB.print(" RSSI: ");
+        //SerialUSB.print(rf95.lastRssi(), DEC);
+      }
+      else {
+  //      SerialUSB.println("Receive failed");
+      }
     }
     else {
-      SerialUSB.println("Receive failed");
+  //    SerialUSB.println("No reply, is the receiver running?");
     }
   }
-  else {
-    SerialUSB.println("No reply, is the receiver running?");
-  }
-  delay(500);
-}
+  
+  if (Serial1.available() > 0) {
+    // read the incoming byte:
+    String data = Serial1.readString();
 
+    // say what you got:
+    SerialUSB.print(data);
+  }
+  
+//  delay(500);
+}
