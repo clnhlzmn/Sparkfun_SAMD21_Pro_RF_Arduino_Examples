@@ -100,13 +100,12 @@ void loop()
     }
   }
   
-  if (Serial1.available() > 0) {
+  while (Serial1.available() > 0) {
     // read the incoming byte:
-    String data = Serial1.readString();
+    char data = Serial1.read();
 
     // say what you got:
     SerialUSB.print(data);
   }
-  
 //  delay(500);
 }
