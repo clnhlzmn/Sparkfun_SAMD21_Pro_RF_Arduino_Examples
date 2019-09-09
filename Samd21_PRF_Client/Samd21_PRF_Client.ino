@@ -1,3 +1,5 @@
+#include <MicroNMEA.h>
+
 /*
   Both the TX and RX ProRF boards will need a wire antenna. We recommend a 3" piece of wire.
   This example is a modified version of the example provided by the Radio Head
@@ -9,6 +11,10 @@
 
 //Radio Head Library:
 #include <RH_RF95.h> 
+
+//nmea parser
+char buffer[200];
+MicroNMEA nmea(buffer, sizeof(buffer));
 
 // We need to provide the RFM95 module's chip select and interrupt pins to the
 // rf95 instance below.On the SparkFun ProRF those pins are 12 and 6 respectively.
@@ -104,8 +110,16 @@ void loop()
     // read the incoming byte:
     char data = Serial1.read();
 
-    // say what you got:
     SerialUSB.print(data);
+//    if (nmea.process(data)) {
+//      //got new nmea data
+//      SerialUSB.print("is valid: ");
+//      SerialUSB.println(nmea.isValid());
+//      SerialUSB.print("lat: ");
+//      SerialUSB.println(nmea.getLatitude());
+//      SerialUSB.print("lon: ");
+//      SerialUSB.println(nmea.getLongitude());
+//    }
   }
 //  delay(500);
 }
