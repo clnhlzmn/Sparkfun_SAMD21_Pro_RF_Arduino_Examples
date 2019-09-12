@@ -88,37 +88,37 @@ void loop()
     byte buf[RH_RF95_MAX_MESSAGE_LEN];
     byte len = sizeof(buf);
   
-    if (rf95.waitAvailableTimeout(2000)) {
-      // Should be a reply message for us now
-      if (rf95.recv(buf, &len)) {
-  //      SerialUSB.print("Got reply: ");
-  //      SerialUSB.println((char*)buf);
-        //SerialUSB.print(" RSSI: ");
-        //SerialUSB.print(rf95.lastRssi(), DEC);
-      }
-      else {
-  //      SerialUSB.println("Receive failed");
-      }
-    }
-    else {
-  //    SerialUSB.println("No reply, is the receiver running?");
-    }
+//    if (rf95.waitAvailableTimeout(2000)) {
+//      // Should be a reply message for us now
+//      if (rf95.recv(buf, &len)) {
+//        SerialUSB.print("Got reply: ");
+//        SerialUSB.println((char*)buf);
+//        SerialUSB.print(" RSSI: ");
+//        SerialUSB.print(rf95.lastRssi(), DEC);
+//      }
+//      else {
+//        SerialUSB.println("Receive failed");
+//      }
+//    }
+//    else {
+//      SerialUSB.println("No reply, is the receiver running?");
+//    }
   }
   
   while (Serial1.available() > 0) {
     // read the incoming byte:
     char data = Serial1.read();
 
-    SerialUSB.print(data);
-//    if (gps.encode(data)) {
-//      //got new nmea data
-//      SerialUSB.print("is valid: ");
-//      SerialUSB.println(gps.location.isValid());
-//      SerialUSB.print("lat: ");
-//      SerialUSB.println(gps.location.lat(), 6);
-//      SerialUSB.print("lon: ");
-//      SerialUSB.println(gps.location.lng(), 6);
-//    }
+//    SerialUSB.print(data);
+    if (gps.encode(data)) {
+      //got new nmea data
+      SerialUSB.print("is valid: ");
+      SerialUSB.println(gps.location.isValid());
+      SerialUSB.print("lat: ");
+      SerialUSB.println(gps.location.lat(), 6);
+      SerialUSB.print("lon: ");
+      SerialUSB.println(gps.location.lng(), 6);
+    }
   }
 //  delay(500);
 }
