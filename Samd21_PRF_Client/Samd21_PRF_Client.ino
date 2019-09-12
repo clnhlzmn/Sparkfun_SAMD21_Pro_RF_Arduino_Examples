@@ -1,4 +1,4 @@
-#include <MicroNMEA.h>
+#include <TinyGPS++.h>
 
 /*
   Both the TX and RX ProRF boards will need a wire antenna. We recommend a 3" piece of wire.
@@ -13,8 +13,7 @@
 #include <RH_RF95.h> 
 
 //nmea parser
-char buffer[200];
-MicroNMEA nmea(buffer, sizeof(buffer));
+TinyGPSPlus gps;
 
 // We need to provide the RFM95 module's chip select and interrupt pins to the
 // rf95 instance below.On the SparkFun ProRF those pins are 12 and 6 respectively.
@@ -111,14 +110,14 @@ void loop()
     char data = Serial1.read();
 
     SerialUSB.print(data);
-//    if (nmea.process(data)) {
+//    if (gps.encode(data)) {
 //      //got new nmea data
 //      SerialUSB.print("is valid: ");
-//      SerialUSB.println(nmea.isValid());
+//      SerialUSB.println(gps.location.isValid());
 //      SerialUSB.print("lat: ");
-//      SerialUSB.println(nmea.getLatitude());
+//      SerialUSB.println(gps.location.lat(), 6);
 //      SerialUSB.print("lon: ");
-//      SerialUSB.println(nmea.getLongitude());
+//      SerialUSB.println(gps.location.lng(), 6);
 //    }
   }
 //  delay(500);
