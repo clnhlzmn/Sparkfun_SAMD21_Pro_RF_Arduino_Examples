@@ -12,6 +12,9 @@
 //Radio Head Library:
 #include <RH_RF95.h> 
 
+#define SLEEP_TIME (10 * 60 * 1000)
+#define WAIT_TIME (1 * 60 * 1000)
+
 //nmea parser
 TinyGPSPlus gps;
 
@@ -81,6 +84,18 @@ State state = SLEEP;
 
 unsigned long time_last = millis();
 
+bool waitTimeout(unsigned long time) {
+  //wait 1 minute for fix
+  if (time - time_last >= WAIT_TIME) {
+    time_last = time;
+    state = SLEEP;
+    digitalWrite(GPSEN, HIGH); //disable gps
+    SerialUSB.println("gps disabled, couldn't get fix");
+    return true;
+  }
+  return false;
+}
+
 void loop()
 {
 
@@ -91,7 +106,8 @@ void loop()
   
   switch (state) {
   case SLEEP:
-    if (time_now - time_last >= 5000) {
+    //sleep for 10 minutes
+    if (time_now - time_last >= SLEEP_TIME) {
       time_last = time_now;
       state = WAIT;
       digitalWrite(GPSEN, LOW); //enable gps
@@ -99,11 +115,7 @@ void loop()
     }
     break;
   case WAIT:
-    if (time_now - time_last >= 30000) {
-      time_last = time_now;
-      state = SLEEP;
-      digitalWrite(GPSEN, HIGH);
-      SerialUSB.println("gps disabled, couldn't get fix");
+    if (waitTimeout(time_now)) {
       message = "couldn't get fix";
       new_message = true;
       break;
@@ -121,9 +133,16 @@ void loop()
     }
     break;
   case FIX:
+    if (waitTimeout(time_now)) {
+      message = "couldn't get fix";
+      new_message = true;
+      break;
+    }
     while (Serial1.available() > 0) {
       char data = Serial1.read();
-      if (gps.encode(data)) {
+      SerialUSB.print(data);
+      gps.encode(data);
+      if (gps.location.isUpdated()) {
         time_last = time_now;
         state = SLEEP;
         digitalWrite(GPSEN, HIGH);
@@ -133,6 +152,7 @@ void loop()
                   String(gps.location.lat(), 6) + "," + 
                   String(gps.location.lng(), 6);
         new_message = true;
+        break;
       }
     }
     break;
