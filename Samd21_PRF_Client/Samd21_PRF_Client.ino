@@ -44,7 +44,7 @@ void setup()
   SerialUSB.begin(9600);
   // It may be difficult to read serial messages on startup. The following line
   // will wait for serial to be ready before continuing. Comment out if not needed.
-  while(!SerialUSB); 
+  //while(!SerialUSB);
   SerialUSB.println("RFM Client!"); 
 
   //Initialize the Radio.
@@ -150,7 +150,8 @@ void loop()
         message = String(gps.date.value()) + "," + 
                   String(gps.time.value()) + "," + 
                   String(gps.location.lat(), 6) + "," + 
-                  String(gps.location.lng(), 6);
+                  String(gps.location.lng(), 6) + "," +
+                  String(gps.hdop.hdop());
         new_message = true;
         break;
       }
