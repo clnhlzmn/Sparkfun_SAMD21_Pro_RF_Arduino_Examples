@@ -20,6 +20,7 @@ TinyGPSPlus gps;
 RH_RF95 rf95(12, 6);
 
 int LED = 13; //Status LED is on pin 13
+int GPSEN = 2; //gps en pin 2
 
 int packetCounter = 0; //Counts the number of packets sent
 long timeSinceLastPacket = 0; //Tracks the time stamp of last packet received
@@ -34,6 +35,8 @@ float frequency = 921.2; //Broadcast frequency
 void setup()
 {
   pinMode(LED, OUTPUT);
+  pinMode(GPSEN, OUTPUT);
+  digitalWrite(GPSEN, HIGH); //disable
 
   SerialUSB.begin(9600);
   // It may be difficult to read serial messages on startup. The following line
@@ -68,57 +71,76 @@ void setup()
   Serial1.begin(9600);
 }
 
-unsigned long message_send_time = millis();
+enum State {
+  SLEEP,
+  WAIT,
+  FIX,
+};
+
+State state = SLEEP;
+
+unsigned long time_last = millis();
 
 void loop()
 {
 
   unsigned long time_now = millis();
-  if (time_now - message_send_time >= 500) {
-    message_send_time = time_now;
-  //  SerialUSB.println("Sending message");
-  
-    //Send a message to the other radio
-    uint8_t toSend[] = "Hi there!";
-    //sprintf(toSend, "Hi, my counter is: %d", packetCounter++);
-    rf95.send(toSend, sizeof(toSend));
-    rf95.waitPacketSent();
-  
-    // Now wait for a reply
-    byte buf[RH_RF95_MAX_MESSAGE_LEN];
-    byte len = sizeof(buf);
-  
-//    if (rf95.waitAvailableTimeout(2000)) {
-//      // Should be a reply message for us now
-//      if (rf95.recv(buf, &len)) {
-//        SerialUSB.print("Got reply: ");
-//        SerialUSB.println((char*)buf);
-//        SerialUSB.print(" RSSI: ");
-//        SerialUSB.print(rf95.lastRssi(), DEC);
-//      }
-//      else {
-//        SerialUSB.println("Receive failed");
-//      }
-//    }
-//    else {
-//      SerialUSB.println("No reply, is the receiver running?");
-//    }
-  }
-  
-  while (Serial1.available() > 0) {
-    // read the incoming byte:
-    char data = Serial1.read();
+  bool new_message = false;
 
-//    SerialUSB.print(data);
-    if (gps.encode(data)) {
-      //got new nmea data
-      SerialUSB.print("is valid: ");
-      SerialUSB.println(gps.location.isValid());
-      SerialUSB.print("lat: ");
-      SerialUSB.println(gps.location.lat(), 6);
-      SerialUSB.print("lon: ");
-      SerialUSB.println(gps.location.lng(), 6);
+  String message;
+  
+  switch (state) {
+  case SLEEP:
+    if (time_now - time_last >= 5000) {
+      time_last = time_now;
+      state = WAIT;
+      digitalWrite(GPSEN, LOW); //enable gps
+      SerialUSB.println("gps enabled");
     }
+    break;
+  case WAIT:
+    if (time_now - time_last >= 30000) {
+      time_last = time_now;
+      state = SLEEP;
+      digitalWrite(GPSEN, HIGH);
+      SerialUSB.println("gps disabled, couldn't get fix");
+      message = "couldn't get fix";
+      new_message = true;
+      break;
+    }
+    while (Serial1.available() > 0) {
+      char data = Serial1.read();
+      if (gps.encode(data)) {
+        if (gps.location.isValid()) {
+          time_last = time_now;
+          state = FIX;
+          SerialUSB.println("got fix");
+          break;
+        }
+      }
+    }
+    break;
+  case FIX:
+    while (Serial1.available() > 0) {
+      char data = Serial1.read();
+      if (gps.encode(data)) {
+        time_last = time_now;
+        state = SLEEP;
+        digitalWrite(GPSEN, HIGH);
+        SerialUSB.println("got data, gps disabled");
+        message = String(gps.date.value()) + "," + 
+                  String(gps.time.value()) + "," + 
+                  String(gps.location.lat(), 6) + "," + 
+                  String(gps.location.lng(), 6);
+        new_message = true;
+      }
+    }
+    break;
   }
-//  delay(500);
+
+  if (new_message) {  
+    //Send a message to the other radio
+    rf95.send((uint8_t*)message.c_str(), message.length());
+    rf95.waitPacketSent();
+  }
 }
