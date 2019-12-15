@@ -16,13 +16,8 @@ RH_RF95 rf95(12, 6);
 
 int LED = 13; //Status LED on pin 13
 
-int packetCounter = 0; //Counts the number of packets sent
-long timeSinceLastPacket = 0; //Tracks the time stamp of last packet received
 // The broadcast frequency is set to 921.2, but the SADM21 ProRf operates
 // anywhere in the range of 902-928MHz in the Americas.
-// Europe operates in the frequencies 863-870, center frequency at 
-// 868MHz.This works but it is unknown how well the radio configures to this frequency:
-//float frequency = 864.1;
 float frequency = 921.2;
 
 void setup()
