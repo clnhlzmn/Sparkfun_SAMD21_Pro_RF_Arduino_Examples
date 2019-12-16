@@ -1,3 +1,5 @@
+#include <ArduinoLowPower.h>
+
 #include <TinyGPS++.h>
 
 /*
@@ -31,6 +33,8 @@ float frequency = 921.2; //Broadcast frequency
 
 void setup()
 {
+  volatile auto t = millis();
+  while (millis() - t < 10*1000) {} //wait 10 seconds to allow for programming
   pinMode(LED, OUTPUT);
   pinMode(GPSEN, OUTPUT);
   digitalWrite(GPSEN, HIGH); //disable
@@ -101,12 +105,12 @@ void loop()
   switch (state) {
   case SLEEP:
     //sleep for 10 minutes
-    if (time_now - time_last >= SLEEP_TIME) {
-      time_last = time_now;
-      state = WAIT;
-      digitalWrite(GPSEN, LOW); //enable gps
-      SerialUSB.println("gps enabled");
-    }
+    SerialUSB.println("sleeping");
+    LowPower.deepSleep(SLEEP_TIME);
+    time_last = time_now;
+    state = WAIT;
+    digitalWrite(GPSEN, LOW); //enable gps
+    SerialUSB.println("gps enabled");
     break;
   case WAIT:
     if (waitTimeout(time_now)) {
