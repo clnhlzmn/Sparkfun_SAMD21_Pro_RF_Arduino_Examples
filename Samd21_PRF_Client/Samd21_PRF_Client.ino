@@ -70,29 +70,12 @@ void setup()
 
   //gps
   Serial1.begin(9600);
+
+  //enable gps
+  digitalWrite(GPSEN, LOW);
 }
-
-enum State {
-  SLEEP,
-  WAIT,
-  FIX,
-};
-
-State state = SLEEP;
 
 unsigned long time_last = millis() + SLEEP_TIME;
-
-bool waitTimeout(unsigned long time) {
-  //wait 1 minute for fix
-  if (time - time_last >= WAIT_TIME) {
-    time_last = time;
-    state = SLEEP;
-    digitalWrite(GPSEN, HIGH); //disable gps
-    SerialUSB.println("gps disabled, couldn't get fix");
-    return true;
-  }
-  return false;
-}
 
 void loop()
 {
@@ -101,61 +84,21 @@ void loop()
   bool new_message = false;
 
   String message;
-  
-  switch (state) {
-  case SLEEP:
-    //sleep for 10 minutes
-    SerialUSB.println("sleeping");
-    LowPower.deepSleep(SLEEP_TIME);
-    time_last = time_now;
-    state = WAIT;
-    digitalWrite(GPSEN, LOW); //enable gps
-    SerialUSB.println("gps enabled");
-    break;
-  case WAIT:
-    if (waitTimeout(time_now)) {
-      message = "couldn't get fix";
+
+  while (Serial1.available() > 0) {
+    char data = Serial1.read();
+    SerialUSB.print(data);
+    gps.encode(data);
+    if (gps.location.isValid() && gps.location.isUpdated()) {
+      SerialUSB.println("got data, gps disabled");
+      message = String(gps.date.value()) + "," + 
+                String(gps.time.value()) + "," + 
+                String(gps.location.lat(), 6) + "," + 
+                String(gps.location.lng(), 6) + "," +
+                String(gps.hdop.hdop());
       new_message = true;
       break;
     }
-    while (Serial1.available() > 0) {
-      char data = Serial1.read();
-      SerialUSB.print(data);
-      if (gps.encode(data)) {
-        if (gps.location.isValid()) {
-          time_last = time_now;
-          state = FIX;
-          SerialUSB.println("got fix");
-          break;
-        }
-      }
-    }
-    break;
-  case FIX:
-    if (waitTimeout(time_now)) {
-      message = "couldn't get fix";
-      new_message = true;
-      break;
-    }
-    while (Serial1.available() > 0) {
-      char data = Serial1.read();
-      SerialUSB.print(data);
-      gps.encode(data);
-      if (gps.location.isUpdated()) {
-        time_last = time_now;
-        state = SLEEP;
-        digitalWrite(GPSEN, HIGH);
-        SerialUSB.println("got data, gps disabled");
-        message = String(gps.date.value()) + "," + 
-                  String(gps.time.value()) + "," + 
-                  String(gps.location.lat(), 6) + "," + 
-                  String(gps.location.lng(), 6) + "," +
-                  String(gps.hdop.hdop());
-        new_message = true;
-        break;
-      }
-    }
-    break;
   }
 
   if (new_message) {  
