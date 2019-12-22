@@ -15,7 +15,7 @@
 #include <RH_RF95.h> 
 
 #define SLEEP_TIME (1 * 60 * 1000)
-#define WAIT_TIME (1 * 60 * 1000)
+#define WAIT_TIME (5 * 60 * 1000)
 
 //nmea parser
 TinyGPSPlus gps;
@@ -120,6 +120,7 @@ void loop()
     }
     while (Serial1.available() > 0) {
       char data = Serial1.read();
+      SerialUSB.print(data);
       if (gps.encode(data)) {
         if (gps.location.isValid()) {
           time_last = time_now;
