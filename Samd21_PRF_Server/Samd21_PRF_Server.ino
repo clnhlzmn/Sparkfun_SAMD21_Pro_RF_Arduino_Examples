@@ -53,6 +53,8 @@ void setup()
    rf95.setTxPower(14, false);
 }
 
+long timeSinceLastPacket = 0;
+
 void loop()
 {
   if (rf95.available()){
